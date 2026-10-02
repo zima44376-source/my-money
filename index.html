@@ -1,4 +1,120 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><meta name="theme-color" content="#f6f7f2"/><meta name="apple-mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="default"/><meta name="apple-mobile-web-app-title" content="小账本"/><title>小账本</title><meta name="description" content="一个只保存在本机的极简个人账本"/><link rel="manifest" href="manifest.json"/><link rel="apple-touch-icon" href="icon.svg"/><link rel="icon" type="image/svg+xml" href="icon.svg"/><link rel="stylesheet" href="style.css"/></head>
-<body><main class="app-shell"><header class="topbar"><div><p class="eyebrow">本月结余</p><h1 id="balance">¥0.00</h1></div><time id="today"></time></header><section class="summary" aria-label="本月收支概览"><div><span>收入</span><strong class="income" id="total-income">¥0.00</strong></div><div><span>支出</span><strong class="expense" id="total-expense">¥0.00</strong></div></section><form id="entry-form" class="entry-card"><div class="type-switch" role="group" aria-label="收支类型"><button class="type-button active" type="button" data-type="expense">支出</button><button class="type-button" type="button" data-type="income">收入</button></div><label class="amount-field"><span>金额</span><span class="amount-input"><b>¥</b><input id="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required/></span></label><div class="form-grid"><label><span>分类</span><select id="category" required><option>餐饮</option><option>交通</option><option>购物</option><option>居住</option><option>娱乐</option><option>工资</option><option>其他</option></select></label><label><span>日期</span><span class="date-picker"><span id="date-display" aria-hidden="true"></span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></svg><input id="date" type="date" aria-label="日期" required/></span></label></div><label><span>备注</span><input id="note" type="text" maxlength="30" placeholder="可不填"/></label><button class="primary-button" type="submit">记一笔</button></form><section class="records"><div class="section-heading"><h2>最近记录</h2><div class="record-actions"><button id="sort-records" class="text-button sort-button" type="button" aria-pressed="false" hidden>金额排序</button><button id="clear-all" class="text-button" type="button" hidden>清空</button></div></div><ul id="record-list"></ul><p id="empty-state" class="empty-state">还没有记录，先记下第一笔吧。</p></section></main><script src="app.js"></script></body></html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f6f7f2" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="小账本" />
+    <title>小账本</title>
+    <meta name="description" content="一个只保存在本机的极简个人账本" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231f2933'/%3E%3Cpath d='M18 21h28v25H18z' fill='%23f6f7f2'/%3E%3Cpath d='M24 16v10M40 16v10M24 33h16M24 40h10' stroke='%233ea37a' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p id="balance-label" class="eyebrow">本月结余</p>
+          <h1 id="balance">¥0.00</h1>
+        </div>
+        <time id="today"></time>
+      </header>
+
+      <div class="month-bar">
+        <label for="month-filter">查看月份</label>
+        <select id="month-filter" aria-label="查看月份"></select>
+      </div>
+
+      <section class="summary" aria-label="本月收支概览">
+        <div>
+          <span>收入</span>
+          <strong class="income" id="total-income">¥0.00</strong>
+        </div>
+        <div>
+          <span>支出</span>
+          <strong class="expense" id="total-expense">¥0.00</strong>
+        </div>
+      </section>
+
+      <form id="entry-form" class="entry-card">
+        <div class="type-switch" role="group" aria-label="收支类型">
+          <button class="type-button active" type="button" data-type="expense">支出</button>
+          <button class="type-button" type="button" data-type="income">收入</button>
+        </div>
+
+        <label class="amount-field">
+          <span>金额</span>
+          <span class="amount-input"><b>¥</b><input id="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required /></span>
+        </label>
+
+        <div class="form-grid">
+          <label>
+            <span>分类</span>
+            <select id="category" required>
+              <option>餐饮</option>
+              <option>交通</option>
+              <option>购物</option>
+              <option>居住</option>
+              <option>娱乐</option>
+              <option>工资</option>
+              <option>其他</option>
+            </select>
+          </label>
+          <label>
+            <span>日期</span>
+            <span class="date-picker">
+              <span id="date-display" aria-hidden="true"></span>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
+              </svg>
+              <input id="date" type="date" aria-label="日期" required />
+            </span>
+          </label>
+        </div>
+
+        <label>
+          <span>备注</span>
+          <input id="note" type="text" maxlength="30" placeholder="可不填" />
+        </label>
+
+        <button id="save-entry" class="primary-button" type="submit">记一笔</button>
+        <button id="cancel-edit" class="cancel-button" type="button" hidden>取消修改</button>
+      </form>
+
+      <section class="records">
+        <div class="section-heading">
+          <h2 id="records-heading">本月记录</h2>
+          <div class="record-actions">
+            <button id="sort-records" class="text-button sort-button" type="button" aria-pressed="false" hidden>金额排序</button>
+            <button id="clear-all" class="text-button" type="button" hidden>清空全部</button>
+          </div>
+        </div>
+        <ul id="record-list"></ul>
+        <p id="empty-state" class="empty-state">还没有记录，先记下第一笔吧。</p>
+      </section>
+
+      <section class="backup-section" aria-label="数据备份">
+        <div>
+          <h2>数据备份</h2>
+          <p>记录只保存在当前设备，建议定期备份到“文件”。</p>
+        </div>
+        <div class="backup-actions">
+          <button id="export-backup" type="button">导出备份</button>
+          <label class="import-button" for="import-backup">导入备份</label>
+          <input id="import-backup" type="file" accept=".json,application/json" />
+        </div>
+        <p id="backup-status" class="backup-status" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
