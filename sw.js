@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-money-v3";
+const CACHE_NAME = "my-money-v4";
 const APP_FILES = ["./", "index.html", "style.css", "app.js", "manifest.json", "icon.svg"];
 
 self.addEventListener("install", (event) => {
