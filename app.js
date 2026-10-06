@@ -24,6 +24,13 @@ let entryType = "expense";
 let sortByAmount = false;
 let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 let editingId = null;
+const collapsedDates = new Set();
+const dateLabel = new Intl.DateTimeFormat("zh-CN", {
+  month: "long",
+  day: "numeric",
+  weekday: "short",
+  timeZone: "UTC",
+});
 
 const today = new Date();
 const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
@@ -140,14 +147,36 @@ function render() {
   document.querySelector("#total-expense").textContent = money(expense);
   document.querySelector("#balance").textContent = money(income - expense);
 
-  list.replaceChildren();
+  const groups = new Map();
   [...monthlyRecords]
-    .sort((a, b) =>
-      sortByAmount
-        ? b.amount - a.amount || b.date.localeCompare(a.date) || b.createdAt - a.createdAt
-        : b.date.localeCompare(a.date) || b.createdAt - a.createdAt
-    )
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
     .forEach((record) => {
+      if (!groups.has(record.date)) groups.set(record.date, []);
+      groups.get(record.date).push(record);
+    });
+
+  list.replaceChildren();
+  groups.forEach((dayRecords, date) => {
+    const group = document.createElement("li");
+    group.className = "date-group";
+    const details = document.createElement("details");
+    details.dataset.date = date;
+    details.open = !collapsedDates.has(date);
+    const heading = document.createElement("summary");
+    heading.className = "date-heading";
+    const label = document.createElement("span");
+    label.textContent = dateLabel.format(new Date(`${date}T00:00:00Z`));
+    const count = document.createElement("span");
+    count.className = "date-count";
+    count.textContent = `${dayRecords.length} 笔`;
+    heading.append(label, count);
+
+    const dayList = document.createElement("ul");
+    dayList.className = "day-records";
+    if (sortByAmount) {
+      dayRecords.sort((a, b) => b.amount - a.amount || b.createdAt - a.createdAt);
+    }
+    dayRecords.forEach((record) => {
       const item = document.createElement("li");
       item.className = "record-item";
       const main = document.createElement("div");
@@ -155,7 +184,7 @@ function render() {
       const title = document.createElement("strong");
       title.textContent = record.category;
       const detail = document.createElement("small");
-      detail.textContent = `${record.date}${record.note ? ` · ${record.note}` : ""}`;
+      detail.textContent = record.note || (record.type === "income" ? "收入" : "支出");
       const amount = document.createElement("strong");
       amount.className = `record-amount ${record.type}`;
       amount.textContent = `${record.type === "income" ? "+" : "−"}${money(record.amount)}`;
@@ -178,8 +207,12 @@ function render() {
       side.append(amount, actions);
       main.append(title, detail);
       item.append(main, side);
-      list.append(item);
+      dayList.append(item);
     });
+    details.append(heading, dayList);
+    group.append(details);
+    list.append(group);
+  });
 
   const hasMonthlyRecords = monthlyRecords.length > 0;
   emptyState.hidden = hasMonthlyRecords;
@@ -188,6 +221,13 @@ function render() {
   clearButton.hidden = records.length === 0;
 }
 
+list.addEventListener("toggle", (event) => {
+  const details = event.target;
+  if (!(details instanceof HTMLDetailsElement) || !details.dataset.date) return;
+  if (details.open) collapsedDates.delete(details.dataset.date);
+  else collapsedDates.add(details.dataset.date);
+}, true);
+
 monthFilter.addEventListener("change", () => {
   selectedMonth = monthFilter.value;
   render();
@@ -195,7 +235,7 @@ monthFilter.addEventListener("change", () => {
 
 sortButton.addEventListener("click", () => {
   sortByAmount = !sortByAmount;
-  sortButton.textContent = sortByAmount ? "按日期排" : "金额排序";
+  sortButton.textContent = sortByAmount ? "组内按时间排" : "组内金额排序";
   sortButton.setAttribute("aria-pressed", String(sortByAmount));
   render();
 });
